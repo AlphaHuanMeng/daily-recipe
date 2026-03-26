@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日食谱 - 今天吃什么？</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #FF6B35;
+            --primary-light: #FF8C5A;
+            --primary-dark: #E55A2B;
+            --accent: #F7C59F;
+            --bg: #FFF8F0;
+            --card-bg: #FFFFFF;
+            --text: #2D2D2D;
+            --text-light: #666;
+            --text-lighter: #999;
+            --border: #F0E6DC;
+            --shadow: 0 4px 20px rgba(255, 107, 53, 0.08);
+            --shadow-hover: 0 8px 30px rgba(255, 107, 53, 0.15);
+            --radius: 16px;
+            --tag-selected: #FF6B35;
+            --tag-bg: #FFF0E8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #FF8A5C 100%);
+            padding: 40px 20px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: shimmer 8s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+        .header h1 {
+            font-size: 2.2em;
+            color: white;
+            position: relative;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 .emoji { font-size: 1.1em; }
+        .header p {
+            color: rgba(255,255,255,0.9);
+            margin-top: 8px;
+            font-size: 1.05em;
+            position: relative;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            margin: -30px auto 40px;
+            padding: 0 16px;
+            position: relative;
+        }
+
+        /* Section Card */
+        .section-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: box-shadow 0.3s;
+        }
+        .section-card:hover { box-shadow: var(--shadow-hover); }
+
+        .section-title {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title .icon {
+            width: 32px;
+            height: 32px;
+            background: var(--tag-bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+        }
+
+        /* Tags */
+        .tag-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .tag {
+            padding: 8px 18px;
+            border-radius: 24px;
+            border: 1.5px solid var(--border);
+            background: var(--tag-bg);
+            cursor: pointer;
+            font-size: 0.92em;
+            transition: all 0.25s;
+            user-select: none;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        .tag:hover {
+            border-color: var(--primary-light);
+            background: #FFE8DA;
+            transform: translateY(-1px);
+        }
+        .tag.selected {
+            background: var(--tag-selected);
+            color: white;
+            border-color: var(--tag-selected);
+            box-shadow: 0 2px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 14px 32px;
+            border-radius: 28px;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45);
+        }
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-secondary:hover {
+            background: var(--tag-bg);
+            transform: translateY(-2px);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-light);
+            border: 1.5px solid var(--border);
+            padding: 10px 20px;
+            font-size: 0.88em;
+        }
+        .btn-ghost:hover {
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* Selected Summary */
+        .selected-summary {
+            display: none;
+            margin-bottom: 16px;
+            padding: 14px 18px;
+            background: var(--tag-bg);
+            border-radius: 12px;
+            font-size: 0.9em;
+            color: var(--text-light);
+            line-height: 1.8;
+        }
+        .selected-summary.show { display: block; }
+        .selected-summary strong { color: var(--primary); }
+
+        /* Results */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .results-count {
+            font-size: 0.9em;
+            color: var(--text-lighter);
+        }
+
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .recipe-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all 0.35s;
+            cursor: pointer;
+            position: relative;
+        }
+        .recipe-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+        .recipe-card.random-pick {
+            border: 2px solid var(--primary);
+            animation: glow 1.5s ease-in-out;
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 0 rgba(255,107,53,0); }
+            50% { box-shadow: 0 0 30px rgba(255,107,53,0.3); }
+            100% { box-shadow: var(--shadow-hover); }
+        }
+
+        .recipe-img {
+            height: 180px;
+            background: linear-gradient(135deg, #FFE0CC, #FFD0B0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+            position: relative;
+        }
+        .recipe-img .difficulty-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.28em;
+            font-weight: 600;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(4px);
+        }
+        .difficulty-easy { color: #4CAF50; }
+        .difficulty-medium { color: #FF9800; }
+        .difficulty-hard { color: #F44336; }
+
+        .recipe-body { padding: 18px; }
+        .recipe-name {
+            font-size: 1.12em;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .recipe-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 0.82em;
+            color: var(--text-lighter);
+            margin-bottom: 10px;
+        }
+        .recipe-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .recipe-tag {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.78em;
+            background: var(--tag-bg);
+            color: var(--primary);
+            font-weight: 500;
+        }
+        .recipe-tag.flavor-tag {
+            background: #F0F7FF;
+            color: #4A90D9;
+        }
+        .recipe-ingredients {
+            font-size: 0.85em;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        .recipe-ingredients .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .random-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.78em;
+            font-weight: 600;
+            z-index: 2;
+            animation: bounce 0.6s ease;
+        }
+        @keyframes bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-lighter);
+        }
+        .empty-state .empty-icon { font-size: 3.5em; margin-bottom: 16px; }
+        .empty-state p { font-size: 1.05em; margin-bottom: 6px; }
+        .empty-state .sub { font-size: 0.88em; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            max-width: 560px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+            animation: slideUp 0.35s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--tag-bg);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .modal-close:hover { background: #FFE0CC; color: var(--primary); }
+        .modal h2 {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .modal .recipe-meta { margin: 8px 0 16px; }
+        .modal .recipe-tags { margin-bottom: 20px; }
+        .modal-section { margin-bottom: 20px; }
+        .modal-section h3 {
+            font-size: 1em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .modal-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .modal-section li {
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 0.92em;
+            color: var(--text-light);
+        }
+        .modal-section li:last-child { border-bottom: none; }
+        .modal-section .step {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+        .modal-section .step:last-child { border-bottom: none; }
+        .step-num {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            background: var(--tag-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .step-text { font-size: 0.92em; color: var(--text-light); line-height: 1.6; }
+        .tip-box {
+            background: #FFF8E1;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 0.88em;
+            color: #B8860B;
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.6em; }
+            .section-card { padding: 20px; }
+            .recipe-grid { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; }
+            .btn { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><span class="emoji">🍳</span> 每日食谱</h1>
+    <p>选择食材和口味，发现美味灵感</p>
+</div>
+
+<div class="container">
+    <!-- 食材选择 -->
+    <div class="section-card">
+        <div class="section-title">
+            <span class="icon">🥬</span> 选择食材
+            <button class="btn-ghost" onclick="clearSelection('ingredient')" style="margin-left:auto;">清空</button>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <div style="font-size:0.85em;color:var(--text-lighter);margin-bottom:8px;font-weight:600;">蔬菜</div>
+            <div class="tag-group" id="veg-tags"></div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <div style="font-size:0.85em;color:var(--text-lighter);margin-bottom:8px;font-weight:600;">肉类 / 蛋奶</div>
+            <div class="tag-group" id="meat-tags"></div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <div style="font-size:0.85em;color:var(--text-lighter);margin-bottom:8px;font-weight:600;">海鲜 / 豆制品</div>
+            <div class="tag-group" id="seafood-tags"></div>
+        </div>
+        <div>
+            <div style="font-size:0.85em;color:var(--text-lighter);margin-bottom:8px;font-weight:600;">主食 / 其他</div>
+            <div class="tag-group" id="staple-tags"></div>
+        </div>
+    </div>
+
+    <!-- 口味选择 -->
+    <div class="section-card">
+        <div class="section-title">
+            <span class="icon">🌶️</span> 口味偏好
+            <button class="btn-ghost" onclick="clearSelection('flavor')" style="margin-left:auto;">清空</button>
+        </div>
+        <div class="tag-group" id="flavor-tags"></div>
+    </div>
+
+    <!-- 选中摘要 -->
+    <div class="selected-summary" id="selectedSummary"></div>
+
+    <!-- 操作按钮 -->
+    <div class="section-card" style="display:flex;justify-content:center;">
+        <div class="actions">
+            <button class="btn btn-primary" onclick="searchRecipes()">🔍 查找菜品</button>
+            <button class="btn btn-secondary" onclick="randomRecipe()">🎲 随机推荐</button>
+        </div>
+    </div>
+
+    <!-- 结果区域 -->
+    <div id="results"></div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ==================== 食材分类 ====================
+const ingredientGroups = {
+    veg: ['土豆','番茄','白菜','青椒','茄子','豆角','黄瓜','西兰花','菠菜','芹菜','莲藕','南瓜','冬瓜','蘑菇','木耳','洋葱','胡萝卜','生菜','韭菜','蒜苔'],
+    meat: ['猪肉','牛肉','鸡肉','排骨','鸡蛋','鸡翅','五花肉','肉末','腊肉','鸭肉'],
+    seafood: ['虾','鱼','豆腐','豆皮','腐竹','蛤蜊','鱿鱼','螃蟹'],
+    staple: ['米饭','面条','馒头','饺子皮','年糕','粉丝','面粉']
+};
+
+const flavors = ['咸鲜','香辣','酸甜','麻辣','清淡','酱香','蒜香','红烧','糖醋','家常'];
+
+// ==================== 菜品数据库 ====================
+const recipes = [
+    { name:'番茄炒蛋', emoji:'🍅', ingredients:['番茄','鸡蛋'], flavors:['咸鲜','家常'], time:10, difficulty:'简单',
+      detail:{ desc:'国民家常菜，酸甜下饭', ingredientList:['番茄 2个','鸡蛋 3个','葱花 适量','盐 适量','糖 1小勺','食用油 适量'],
+        steps:['番茄切块，鸡蛋打散加少许盐搅匀','热锅凉油，倒入蛋液炒至凝固盛出','锅中少许油，放番茄块翻炒出汁','加入糖和盐调味，倒回鸡蛋翻炒均匀','撒葱花出锅'], tip:'番茄先用开水烫一下更容易去皮出汁'}},
+    { name:'酸辣土豆丝', emoji:'🥔', ingredients:['土豆','青椒'], flavors:['酸甜','香辣'], time:15, difficulty:'简单',
+      detail:{ desc:'爽脆开胃的经典凉菜', ingredientList:['土豆 2个','青椒 1个','干辣椒 5个','花椒 1小勺','醋 2勺','盐 适量'],
+        steps:['土豆去皮切细丝，泡水去淀粉','青椒切丝，干辣椒切段','热油爆香花椒干辣椒，放土豆丝大火翻炒','加醋、盐，放青椒丝快炒30秒','断生即出锅，保持脆感'], tip:'土豆丝切好后多泡几次水，炒出来更脆'}},
+    { name:'红烧排骨', emoji:'🍖', ingredients:['排骨'], flavors:['红烧','酱香','咸鲜'], time:50, difficulty:'中等',
+      detail:{ desc:'浓油赤酱，肉香四溢', ingredientList:['排骨 500g','冰糖 30g','生抽 2勺','老抽 1勺','料酒 2勺','姜片 5片','八角 2个','桂皮 1小块'],
+        steps:['排骨冷水下锅焯水，撇去浮沫捞出','锅中少油，放冰糖小火炒至枣红色','放入排骨翻炒上色','加料酒、生抽、老抽、姜片、八角、桂皮','加热水没过排骨，大火烧开转小火炖40分钟','大火收汁至浓稠即可'], tip:'炒糖色时一定要小火，糖色发苦就失败了'}},
+    { name:'宫保鸡丁', emoji:'🐔', ingredients:['鸡肉','花生'], flavors:['麻辣','香辣','酸甜'], time:20, difficulty:'中等',
+      detail:{ desc:'川菜经典，麻辣鲜香', ingredientList:['鸡胸肉 300g','花生米 50g','干辣椒 10个','花椒 1勺','葱段 适量','蒜 3瓣','醋 1勺','糖 1勺','生抽 2勺','淀粉 适量'],
+        steps:['鸡胸肉切丁，加盐、料酒、淀粉腌制15分钟','调碗汁：醋+糖+生抽+淀粉+水','花生米炸至金黄备用','热油爆香干辣椒、花椒，放鸡丁滑炒','倒入碗汁翻炒，放花生米和葱段炒匀'], tip:'花生米最后放，保持酥脆口感'}},
+    { name:'鱼香茄子', emoji:'🍆', ingredients:['茄子','肉末'], flavors:['酱香','香辣','酸甜'], time:20, difficulty:'中等',
+      detail:{ desc:'下饭神器，有鱼香味却没有鱼', ingredientList:['茄子 2根','猪肉末 100g','豆瓣酱 1勺','姜蒜末 适量','葱花 适量','醋 1勺','糖 1勺','生抽 1勺','淀粉水 适量'],
+        steps:['茄子切条，用盐腌制10分钟挤去水分','调鱼香汁：醋+糖+生抽+淀粉水','热油炸茄条至软身捞出','锅留底油，炒肉末至变色','加豆瓣酱、姜蒜末炒香，放茄条','倒入鱼香汁翻炒收汁，撒葱花'], tip:'茄子先腌制可以减少吸油量'}},
+    { name:'清炒西兰花', emoji:'🥦', ingredients:['西兰花'], flavors:['清淡','蒜香','咸鲜'], time:8, difficulty:'简单',
+      detail:{ desc:'翠绿爽口，营养丰富', ingredientList:['西兰花 1颗','蒜 4瓣','盐 适量','食用油 适量'],
+        steps:['西兰花切小朵，淡盐水浸泡10分钟','烧开水焯西兰花1分钟，捞出过凉水','热锅少油，蒜末爆香','放入西兰花大火翻炒1分钟','加盐调味出锅'], tip:'焯水后过凉水可以保持翠绿色'}},
+    { name:'麻婆豆腐', emoji:'🧊', ingredients:['豆腐','肉末'], flavors:['麻辣','香辣'], time:15, difficulty:'简单',
+      detail:{ desc:'麻辣鲜香烫，川菜灵魂', ingredientList:['嫩豆腐 1盒','猪肉末 80g','豆瓣酱 1.5勺','花椒粉 适量','蒜苗 2根','淀粉水 适量'],
+        steps:['豆腐切小块，开水焯2分钟去豆腥','热油炒肉末至变色','加豆瓣酱炒出红油','加适量水烧开，放豆腐小火煮3分钟','勾薄芡，撒花椒粉和蒜苗段'], tip:'豆腐焯水可以防止碎裂'}},
+    { name:'蒜蓉虾', emoji:'🦐', ingredients:['虾'], flavors:['蒜香','咸鲜'], time:15, difficulty:'简单',
+      detail:{ desc:'蒜香浓郁，鲜嫩弹牙', ingredientList:['大虾 500g','蒜 1整头','料酒 1勺','盐 适量','葱花 适量','食用油 适量'],
+        steps:['虾去虾线，剪开背部','蒜切末（多一些）','热油放一半蒜末爆香','放虾煎至两面变红','加料酒、盐、剩余蒜末翻炒','撒葱花出锅'], tip:'蒜末分两次下，先炒的出香，后放的保持蒜香'}},
+    { name:'糖醋里脊', emoji:'🥩', ingredients:['猪肉'], flavors:['糖醋','酸甜'], time:25, difficulty:'中等',
+      detail:{ desc:'外酥里嫩，酸甜可口', ingredientList:['猪里脊 300g','淀粉 适量','鸡蛋 1个','番茄酱 3勺','白醋 2勺','白糖 3勺','盐 适量'],
+        steps:['里脊切条，加盐、料酒腌制10分钟','裹蛋液和淀粉糊','油温六成热炸至定型捞出，升温复炸至金黄','调糖醋汁：番茄酱+白醋+白糖+少许水','锅中少油，倒入糖醋汁烧开','放入炸好的里脊翻炒裹汁'], tip:'复炸是酥脆的关键，油温要够高'}},
+    { name:'回锅肉', emoji:'🥓', ingredients:['五花肉','青椒'], flavors:['香辣','酱香','家常'], time:25, difficulty:'中等',
+      detail:{ desc:'川菜之王，肥而不腻', ingredientList:['五花肉 400g','青椒 2个','蒜苗 3根','豆瓣酱 1.5勺','豆豉 1勺','姜片 适量'],
+        steps:['五花肉整块冷水煮至8分熟，捞出晾凉','切成大薄片','锅中不放油，放肉片煸至出油卷曲','推到一边，放豆瓣酱、豆豉炒香','放青椒、蒜苗翻炒','加少许生抽调味出锅'], tip:'肉煮好后放冰箱冷藏一下更好切片'}},
+    { name:'干煸豆角', emoji:'🫘', ingredients:['豆角','肉末'], flavors:['香辣','咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'干香入味，很下饭', ingredientList:['豆角 400g','肉末 80g','干辣椒 5个','花椒 适量','蒜末 适量','盐 适量'],
+        steps:['豆角掰段，洗净沥干','多油炸豆角至表皮起皱捞出','锅留底油，炒肉末至变色','加干辣椒、花椒、蒜末爆香','放入豆角翻炒，加盐调味'], tip:'豆角一定要炸透或炒熟，未熟的豆角有毒素'}},
+    { name:'蚂蚁上树', emoji:'🍜', ingredients:['粉丝','肉末'], flavors:['香辣','酱香'], time:15, difficulty:'简单',
+      detail:{ desc:'肉末裹在粉丝上如蚂蚁爬树', ingredientList:['粉丝 2把','猪肉末 100g','豆瓣酱 1勺','生抽 1勺','葱花 适量','姜蒜末 适量'],
+        steps:['粉丝温水泡软，剪短','热油炒肉末至变色','加豆瓣酱、姜蒜末炒香','加适量水和生抽烧开','放入粉丝翻炒收汁','撒葱花出锅'], tip:'粉丝不要泡太久，保持一点嚼劲'}},
+    { name:'红烧茄子', emoji:'🍆', ingredients:['茄子'], flavors:['红烧','酱香','家常'], time:20, difficulty:'简单',
+      detail:{ desc:'软糯入味，下饭首选', ingredientList:['茄子 2根','蒜 4瓣','生抽 2勺','老抽 半勺','糖 1勺','淀粉水 适量'],
+        steps:['茄子切滚刀块，盐腌10分钟挤水','热油炸茄子至金黄捞出','锅留底油，蒜末爆香','加生抽、老抽、糖和少许水烧开','放茄子翻炒入味','淀粉水勾芡收汁'], tip:'茄子先腌制挤水，可以大幅减少吸油量'}},
+    { name:'葱油拌面', emoji:'🍝', ingredients:['面条','洋葱'], flavors:['咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'简单却让人上瘾的味道', ingredientList:['细面条 200g','小葱 1把','洋葱 半个','生抽 3勺','老抽 1勺','糖 1勺','食用油 适量'],
+        steps:['面条煮熟捞出过凉水','小葱切段，洋葱切丝','多油小火慢炸葱段和洋葱至焦香','调料汁：生抽+老抽+糖，倒入葱油锅中','将葱油料汁浇在面条上','拌匀即可食用'], tip:'炸葱油一定要小火慢炸，大火会发苦'}},
+    { name:'可乐鸡翅', emoji:'🍗', ingredients:['鸡翅'], flavors:['酱香','咸鲜','红烧'], time:30, difficulty:'简单',
+      detail:{ desc:'甜香入味，大人小孩都爱', ingredientList:['鸡翅 10个','可乐 1罐','生抽 2勺','老抽 1勺','姜片 5片','料酒 1勺'],
+        steps:['鸡翅划两刀方便入味，冷水焯水','锅中少油，放鸡翅煎至两面金黄','加姜片、料酒翻炒','倒入可乐没过鸡翅','加生抽、老抽，大火烧开转小火炖20分钟','大火收汁至浓稠'], tip:'用无糖可乐口感差不多但更健康'}},
+    { name:'蒜蓉炒菠菜', emoji:'🥬', ingredients:['菠菜'], flavors:['蒜香','清淡','咸鲜'], time:5, difficulty:'简单',
+      detail:{ desc:'快手绿叶菜，营养补铁', ingredientList:['菠菜 1把','蒜 4瓣','盐 适量','食用油 适量'],
+        steps:['菠菜洗净切段，根部可保留','蒜切末','热锅宽油，蒜末爆香','大火放菠菜快炒至断生','加盐调味即出锅'], tip:'菠菜不用焯水也行，大火快炒保留营养'}},
+    { name:'虎皮青椒', emoji:'🫑', ingredients:['青椒'], flavors:['香辣','家常','咸鲜'], time:10, difficulty:'简单',
+      detail:{ desc:'焦香微辣，极简下饭菜', ingredientList:['青椒 6个','蒜 3瓣','生抽 2勺','醋 1勺','糖 半勺','盐 适量'],
+        steps:['青椒去籽，整个或对半切','锅不放油，青椒按压煸至表皮起虎皮纹','盛出备用','锅中少油，蒜末爆香','放青椒，加生抽、醋、糖翻炒入味'], tip:'煸青椒时要用锅铲按压，才能出虎皮纹'}},
+    { name:'木须肉', emoji:'🥚', ingredients:['鸡蛋','木耳','黄瓜','猪肉'], flavors:['咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'色彩丰富的经典家常菜', ingredientList:['猪肉 150g','鸡蛋 3个','木耳 适量','黄瓜 1根','葱姜 适量','生抽 1勺','料酒 1勺','盐 适量'],
+        steps:['木耳泡发撕小朵，黄瓜切片，肉切片腌制','鸡蛋炒熟盛出','锅中油热，炒肉片至变色','放木耳、黄瓜翻炒','加生抽调味，倒回鸡蛋翻炒均匀'], tip:'肉片腌制时加少许淀粉口感更嫩'}},
+    { name:'白菜炖豆腐', emoji:'🥬', ingredients:['白菜','豆腐'], flavors:['清淡','咸鲜'], time:20, difficulty:'简单',
+      detail:{ desc:'清淡暖胃，冬日必备', ingredientList:['大白菜 半颗','北豆腐 1盒','葱姜 适量','盐 适量','白胡椒粉 少许'],
+        steps:['白菜切块分菜帮和菜叶，豆腐切块','热油炒葱姜，先放菜帮炒软','加水烧开，放豆腐','中火炖10分钟','放菜叶、盐和白胡椒粉，再煮2分钟'], tip:'先炒菜帮再放菜叶，口感更好'}},
+    { name:'剁椒鱼头', emoji:'🐟', ingredients:['鱼'], flavors:['香辣','咸鲜'], time:25, difficulty:'中等',
+      detail:{ desc:'湘菜名菜，鲜辣过瘾', ingredientList:['鱼头 1个','剁椒 3勺','姜蒜末 适量','葱花 适量','料酒 2勺','蒸鱼豉油 1勺'],
+        steps:['鱼头洗净对半劈开，加料酒、姜片腌15分钟','盘中铺姜片，放鱼头','鱼头上均匀铺满剁椒和蒜末','上锅大火蒸12分钟','浇热油，撒葱花即可'], tip:'蒸的时间不要太长，鱼肉才嫩'}},
+    { name:'韭菜炒蛋', emoji:'🥚', ingredients:['韭菜','鸡蛋'], flavors:['咸鲜','家常'], time:8, difficulty:'简单',
+      detail:{ desc:'春天的味道，简单鲜美', ingredientList:['韭菜 1把','鸡蛋 3个','盐 适量','食用油 适量'],
+        steps:['韭菜洗净切段，鸡蛋打散','热锅多油，鸡蛋炒至凝固盛出','锅中少许油，大火快炒韭菜','韭菜稍软时放回鸡蛋','加盐翻炒均匀，立即出锅'], tip:'韭菜不能炒太久，变黄就老了'}},
+    { name:'炒年糕', emoji:'🍡', ingredients:['年糕','白菜'], flavors:['酱香','咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'软糯Q弹，街头经典', ingredientList:['年糕 300g','白菜 3片','胡萝卜 半根','生抽 2勺','老抽 半勺','糖 1勺','辣酱 1勺'],
+        steps:['年糕切片泡水防粘连','白菜切块，胡萝卜切片','热油炒白菜和胡萝卜','加适量水烧开，放年糕','加生抽、老抽、糖、辣酱翻炒','炒至汤汁浓稠包裹年糕'], tip:'年糕容易粘锅，要不停翻炒'}},
+    { name:'凉拌黄瓜', emoji:'🥒', ingredients:['黄瓜'], flavors:['酸甜','蒜香','清淡'], time:5, difficulty:'简单',
+      detail:{ desc:'开胃爽口，夏日必备', ingredientList:['黄瓜 2根','蒜 4瓣','醋 2勺','生抽 1勺','糖 1勺','辣椒油 适量','芝麻 少许'],
+        steps:['黄瓜拍碎切段','蒜切末','调料汁：醋+生抽+糖+辣椒油','将料汁倒在黄瓜上','拌匀撒芝麻，冷藏10分钟更佳'], tip:'黄瓜要拍不要切，拍碎更容易入味'}},
+    { name:'洋葱炒肉', emoji:'🧅', ingredients:['洋葱','猪肉'], flavors:['咸鲜','家常'], time:12, difficulty:'简单',
+      detail:{ desc:'简单家常，洋葱的甜搭配肉香', ingredientList:['洋葱 1个','猪肉 200g','生抽 1勺','料酒 1勺','盐 适量','胡椒粉 少许'],
+        steps:['洋葱切丝，猪肉切片加料酒、生抽腌制','热油滑炒肉片至变色盛出','锅中炒洋葱至微软出香','放回肉片翻炒','加盐和胡椒粉调味出锅'], tip:'洋葱不要炒太久，保持一点脆感更好吃'}},
+    { name:'排骨炖冬瓜', emoji:'🍲', ingredients:['排骨','冬瓜'], flavors:['清淡','咸鲜'], time:50, difficulty:'中等',
+      detail:{ desc:'清热解暑，汤鲜味美', ingredientList:['排骨 400g','冬瓜 500g','姜片 5片','葱段 适量','盐 适量','枸杞 适量'],
+        steps:['排骨冷水焯水去血沫','砂锅放排骨、姜片、葱段，加足量水','大火烧开转小火炖30分钟','冬瓜切块放入，继续炖15分钟','加盐调味，撒枸杞'], tip:'冬瓜后放，煮太久会化掉'}},
+    { name:'蒜蓉蒸茄子', emoji:'🍆', ingredients:['茄子'], flavors:['蒜香','清淡'], time:15, difficulty:'简单',
+      detail:{ desc:'少油健康，蒜香浓郁', ingredientList:['茄子 2根','蒜 1整头','生抽 2勺','醋 1勺','糖 半勺','辣椒油 适量','葱花 适量'],
+        steps:['茄子对半切开，上锅蒸10分钟','蒜切末','调蒜蓉汁：蒜末+生抽+醋+糖+辣椒油','茄子蒸好后撕成条','浇上蒜蓉汁，撒葱花'], tip:'蒸比炸健康很多，味道一样好'}},
+    { name:'南瓜粥', emoji:'🎃', ingredients:['南瓜','米饭'], flavors:['清淡'], time:40, difficulty:'简单',
+      detail:{ desc:'金黄软糯，养胃暖身', ingredientList:['南瓜 300g','大米 100g','水 适量'],
+        steps:['南瓜去皮切小块','大米洗净浸泡30分钟','锅中加水放大米，大火烧开','转小火煮15分钟，放南瓜块','继续小火煮至南瓜软烂融入粥中'], tip:'南瓜切小块煮得更快更容易融化'}},
+    { name:'炝炒莲藕', emoji:'🪷', ingredients:['莲藕'], flavors:['酸甜','清淡','咸鲜'], time:10, difficulty:'简单',
+      detail:{ desc:'脆嫩爽口，酸辣开胃', ingredientList:['莲藕 1节','干辣椒 4个','花椒 适量','醋 1勺','盐 适量'],
+        steps:['莲藕去皮切薄片，泡水防氧化','热油爆香花椒、干辣椒','大火快炒莲藕片','加醋和盐翻炒1分钟','断生即出锅保持脆感'], tip:'切好的莲藕泡在醋水里可以保持洁白'}},
+    { name:'西红柿炖牛腩', emoji:'🥩', ingredients:['牛肉','番茄'], flavors:['酸甜','咸鲜','红烧'], time:90, difficulty:'困难',
+      detail:{ desc:'酸甜浓郁，牛肉软烂入味', ingredientList:['牛腩 500g','番茄 3个','洋葱 半个','番茄酱 2勺','姜片 适量','八角 2个','盐 适量'],
+        steps:['牛腩切块冷水焯水','番茄切块，洋葱切块','热油炒洋葱、姜片、八角','放牛腩翻炒，加料酒','放番茄块和番茄酱翻炒','加热水没过牛腩，大火烧开转小火炖90分钟','加盐调味'], tip:'炖的时间足够长牛肉才能软烂'}},
+    { name:'蛋炒饭', emoji:'🍚', ingredients:['米饭','鸡蛋'], flavors:['咸鲜','家常'], time:10, difficulty:'简单',
+      detail:{ desc:'粒粒分明，最简单也最考功夫', ingredientList:['隔夜米饭 1大碗','鸡蛋 2个','葱花 适量','盐 适量','食用油 适量'],
+        steps:['鸡蛋打散，米饭打散（隔夜饭最佳）','热锅多油，倒蛋液','蛋液半凝固时倒入米饭','大火翻炒让米饭粒粒分明','加盐调味，撒葱花出锅'], tip:'米饭一定要用隔夜饭，水分少才能炒得粒粒分明'}},
+    { name:'芹菜炒肉丝', emoji:'🥬', ingredients:['芹菜','猪肉'], flavors:['咸鲜','家常','清淡'], time:12, difficulty:'简单',
+      detail:{ desc:'清爽家常，芹菜香气浓郁', ingredientList:['芹菜 300g','猪肉 150g','生抽 1勺','料酒 1勺','淀粉 适量','盐 适量'],
+        steps:['芹菜切段，猪肉切丝加料酒、淀粉腌制','热油滑炒肉丝至变色盛出','锅中少油，大火炒芹菜','芹菜断生时放回肉丝','加生抽和盐翻炒出锅'], tip:'芹菜叶也可以吃，营养比茎更丰富'}},
+    { name:'地三鲜', emoji:'🍆', ingredients:['茄子','土豆','青椒'], flavors:['咸鲜','酱香','家常'], time:20, difficulty:'中等',
+      detail:{ desc:'东北名菜，三种食材完美搭配', ingredientList:['茄子 1根','土豆 1个','青椒 2个','蒜末 适量','生抽 2勺','老抽 半勺','糖 1勺','淀粉水 适量'],
+        steps:['茄子、土豆切滚刀块，青椒切块','分别炸土豆和茄子至金黄','锅留底油，蒜末爆香','加生抽、老抽、糖和少许水','放入三种食材翻炒','勾薄芡收汁即可'], tip:'土豆先炸可以外酥里嫩，口感更好'}},
+    { name:'胡萝卜炒鸡蛋', emoji:'🥕', ingredients:['胡萝卜','鸡蛋'], flavors:['咸鲜','清淡','家常'], time:8, difficulty:'简单',
+      detail:{ desc:'色彩鲜艳，营养简单', ingredientList:['胡萝卜 2根','鸡蛋 3个','葱花 适量','盐 适量'],
+        steps:['胡萝卜切丝或切片，鸡蛋打散','热油炒蛋至凝固盛出','锅中少油，炒胡萝卜至稍软','放回鸡蛋翻炒','加盐调味撒葱花'], tip:'胡萝卜用油炒更有利于胡萝卜素吸收'}},
+    { name:'腊肉炒蒜苔', emoji:'🥓', ingredients:['腊肉','蒜苔'], flavors:['咸鲜','酱香','家常'], time:12, difficulty:'简单',
+      detail:{ desc:'腊肉的咸香配蒜苔的脆嫩', ingredientList:['腊肉 150g','蒜苔 300g','干辣椒 3个','生抽 半勺','料酒 1勺'],
+        steps:['腊肉切薄片，蒜苔切段','腊肉先用温水泡10分钟去多余盐分','不放油，小火煸腊肉出油','放干辣椒炒香','大火放蒜苔翻炒至断生','加少许生抽调味出锅'], tip:'腊肉本身够咸，少放或不放盐'}},
+    { name:'番茄鸡蛋面', emoji:'🍜', ingredients:['番茄','鸡蛋','面条'], flavors:['酸甜','咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'热乎乎一碗，治愈一切', ingredientList:['面条 200g','番茄 2个','鸡蛋 2个','葱花 适量','盐 适量','生抽 1勺'],
+        steps:['番茄切块，鸡蛋打散','热油炒蛋盛出','锅中炒番茄出汁','加水烧开，放生抽和盐','下面条煮至断生','放鸡蛋撒葱花'], tip:'番茄多炒一会儿，汤底才够浓郁'}},
+    { name:'鱿鱼炒芹菜', emoji:'🦑', ingredients:['鱿鱼','芹菜'], flavors:['咸鲜','家常'], time:12, difficulty:'中等',
+      detail:{ desc:'海鲜配蔬菜，爽脆鲜美', ingredientList:['鱿鱼 300g','芹菜 200g','姜片 适量','料酒 1勺','盐 适量','红椒 1个'],
+        steps:['鱿鱼切花刀，焯水卷曲后捞出','芹菜切段，红椒切丝','热油爆香姜片','大火快炒芹菜和红椒','放鱿鱼翻炒，加料酒和盐','快速翻炒出锅'], tip:'鱿鱼不要炒太久，几十秒即可，否则会老'}},
+    { name:'蛤蜊蒸蛋', emoji:'🥚', ingredients:['蛤蜊','鸡蛋'], flavors:['清淡','咸鲜'], time:20, difficulty:'中等',
+      detail:{ desc:'滑嫩鲜美，颜值与味道并存', ingredientList:['蛤蜊 200g','鸡蛋 3个','葱花 适量','生抽 1勺','香油 少许'],
+        steps:['蛤蜊提前吐沙，煮开口捞出留汤','蛤蜊汤过滤晾凉，与鸡蛋液1:1.5混合','过筛倒入盘中，去气泡','摆入蛤蜊，盖保鲜膜蒸12分钟','淋生抽和香油，撒葱花'], tip:'蛤蜊汤代替清水蒸蛋，鲜味加倍'}},
+    { name:'辣炒花甲', emoji:'🐚', ingredients:['蛤蜊'], flavors:['香辣','麻辣','蒜香'], time:15, difficulty:'中等',
+      detail:{ desc:'夜宵人气王，鲜辣过瘾', ingredientList:['花甲 500g','干辣椒 8个','花椒 1勺','蒜 6瓣','姜片 适量','料酒 2勺','豆瓣酱 1勺'],
+        steps:['花甲提前吐沙洗净','热油爆香干辣椒、花椒、姜蒜','放花甲大火翻炒','加料酒、豆瓣酱','翻炒至花甲全部开口','撒葱花出锅'], tip:'不开口的花甲不要吃，可能是死的'}},
+    { name:'白灼生菜', emoji:'🥬', ingredients:['生菜'], flavors:['清淡','蒜香','咸鲜'], time:5, difficulty:'简单',
+      detail:{ desc:'原汁原味，粤式经典', ingredientList:['生菜 1颗','蒜 3瓣','蚝油 2勺','生抽 1勺','糖 少许','食用油 适量'],
+        steps:['生菜洗净掰成大片','烧开水加少许油和盐，焯生菜15秒','捞出摆盘','调蚝油汁：蚝油+生抽+糖+少许水，加热','浇在生菜上，撒蒜末','淋一勺热油激香'], tip:'焯水时间要短，保持翠绿和脆感'}},
+    { name:'腐竹炒肉', emoji:'🥩', ingredients:['腐竹','猪肉'], flavors:['咸鲜','家常'], time:15, difficulty:'简单',
+      detail:{ desc:'腐竹吸满肉汁，越嚼越香', ingredientList:['腐竹 150g','猪肉 200g','青椒 1个','生抽 1勺','蚝油 1勺','盐 适量'],
+        steps:['腐竹提前泡发切段，猪肉切片腌制','热油滑炒肉片至变色盛出','锅中炒青椒和腐竹','放回肉片，加生抽和蚝油','翻炒均匀出锅'], tip:'腐竹用温水泡发，冷水太慢热水会烂'}},
+    { name:'豆皮炒青椒', emoji:'🫑', ingredients:['豆皮','青椒'], flavors:['咸鲜','家常','香辣'], time:10, difficulty:'简单',
+      detail:{ desc:'快手素菜，鲜香下饭', ingredientList:['豆皮 200g','青椒 2个','蒜 3瓣','生抽 1勺','盐 适量','辣椒 适量'],
+        steps:['豆皮切丝，青椒切丝','热油蒜末爆香','放豆皮翻炒至微焦','加青椒丝大火翻炒','加生抽和盐调味出锅'], tip:'豆皮炒到微焦更香'}},
+    { name:'蘑菇炒肉', emoji:'🍄', ingredients:['蘑菇','猪肉'], flavors:['咸鲜','家常'], time:12, difficulty:'简单',
+      detail:{ desc:'菌菇的鲜香搭配肉香', ingredientList:['蘑菇 300g','猪肉 150g','蒜 3瓣','生抽 1勺','蚝油 1勺','盐 适量'],
+        steps:['蘑菇切片，猪肉切片腌制','热油炒肉片至变色盛出','蒜末爆香，放蘑菇翻炒出水','蘑菇变软后放回肉片','加生抽、蚝油翻炒出锅'], tip:'蘑菇会出很多水，大火炒可以更快收干'}},
+    { name:'水煮鱼', emoji:'🐟', ingredients:['鱼','豆芽'], flavors:['麻辣','香辣'], time:30, difficulty:'困难',
+      detail:{ desc:'川菜硬菜，麻辣鲜嫩', ingredientList:['鱼片 400g','豆芽 200g','干辣椒 15个','花椒 2勺','豆瓣酱 2勺','蛋清 1个','淀粉 适量','蒜 6瓣'],
+        steps:['鱼片加蛋清、淀粉、盐腌制15分钟','豆芽焯水铺在碗底','锅中炒豆瓣酱出红油，加水烧开','鱼片逐片下锅煮至变白捞出','鱼片铺在豆芽上，撒干辣椒和花椒','浇上滚烫热油激香'], tip:'鱼片顺着纹理切，不容易碎'}},
+    { name:'饺子', emoji:'🥟', ingredients:['饺子皮','猪肉','白菜'], flavors:['咸鲜','家常'], time:45, difficulty:'中等',
+      detail:{ desc:'中华传统美食，团圆的味道', ingredientList:['饺子皮 50张','猪肉 300g','白菜 200g','葱姜 适量','生抽 2勺','香油 1勺','盐 适量'],
+        steps:['白菜切碎加盐杀水，挤干','猪肉剁馅，加葱姜末、生抽、香油搅拌','加入白菜拌匀成馅','取饺子皮包馅，捏紧','大火烧水，下饺子煮至浮起','点两次冷水，再次浮起即熟'], tip:'搅馅时朝一个方向搅，肉馅更有弹性'}},
+    { name:'螃蟹粉丝煲', emoji:'🦀', ingredients:['螃蟹','粉丝'], flavors:['咸鲜','蒜香'], time:25, difficulty:'困难',
+      detail:{ desc:'鲜到眉毛掉下来', ingredientList:['螃蟹 2只','粉丝 2把','蒜 1整头','姜片 适量','生抽 2勺','蚝油 1勺','料酒 2勺','葱花 适量'],
+        steps:['螃蟹清洗切块，粉丝泡软','砂锅底铺蒜末和姜片','放粉丝，再铺螃蟹','调汁：生抽+蚝油+料酒+少许水，淋上','盖盖大火烧开转中火焖15分钟','撒葱花上桌'], tip:'用砂锅做保温效果好，上桌还在咕嘟'}},
+];
+
+// ==================== 状态管理 ====================
+let selectedIngredients = new Set();
+let selectedFlavors = new Set();
+
+// ==================== 初始化 ====================
+function init() {
+    renderTags('veg-tags', ingredientGroups.veg, 'ingredient');
+    renderTags('meat-tags', ingredientGroups.meat, 'ingredient');
+    renderTags('seafood-tags', ingredientGroups.seafood, 'ingredient');
+    renderTags('staple-tags', ingredientGroups.staple, 'ingredient');
+    renderTags('flavor-tags', flavors, 'flavor');
+}
+
+function renderTags(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = items.map(item =>
+        `<span class="tag" data-type="${type}" data-value="${item}" onclick="toggleTag(this)">${item}</span>`
+    ).join('');
+}
+
+function toggleTag(el) {
+    const type = el.dataset.type;
+    const value = el.dataset.value;
+    const set = type === 'ingredient' ? selectedIngredients : selectedFlavors;
+
+    if (set.has(value)) {
+        set.delete(value);
+        el.classList.remove('selected');
+    } else {
+        set.add(value);
+        el.classList.add('selected');
+    }
+    updateSummary();
+}
+
+function clearSelection(type) {
+    if (type === 'ingredient') {
+        selectedIngredients.clear();
+        document.querySelectorAll('.tag[data-type="ingredient"]').forEach(t => t.classList.remove('selected'));
+    } else {
+        selectedFlavors.clear();
+        document.querySelectorAll('.tag[data-type="flavor"]').forEach(t => t.classList.remove('selected'));
+    }
+    updateSummary();
+}
+
+function updateSummary() {
+    const el = document.getElementById('selectedSummary');
+    if (selectedIngredients.size === 0 && selectedFlavors.size === 0) {
+        el.classList.remove('show');
+        return;
+    }
+    let html = '';
+    if (selectedIngredients.size > 0)
+        html += `<strong>食材：</strong>${[...selectedIngredients].join('、')}`;
+    if (selectedFlavors.size > 0)
+        html += `${html ? '　　' : ''}<strong>口味：</strong>${[...selectedFlavors].join('、')}`;
+    el.innerHTML = html;
+    el.classList.add('show');
+}
+
+// ==================== 搜索 ====================
+function searchRecipes() {
+    const results = filterRecipes();
+    renderResults(results, '查找结果');
+}
+
+function filterRecipes() {
+    return recipes.filter(r => {
+        const ingredientMatch = selectedIngredients.size === 0 ||
+            [...selectedIngredients].some(i => r.ingredients.includes(i));
+        const flavorMatch = selectedFlavors.size === 0 ||
+            [...selectedFlavors].some(f => r.flavors.includes(f));
+        return ingredientMatch && flavorMatch;
+    }).sort((a, b) => {
+        // 匹配度排序：匹配越多越靠前
+        const scoreA = countMatches(a);
+        const scoreB = countMatches(b);
+        return scoreB - scoreA;
+    });
+}
+
+function countMatches(recipe) {
+    let score = 0;
+    selectedIngredients.forEach(i => { if (recipe.ingredients.includes(i)) score += 2; });
+    selectedFlavors.forEach(f => { if (recipe.flavors.includes(f)) score += 1; });
+    return score;
+}
+
+// ==================== 随机推荐 ====================
+function randomRecipe() {
+    const pool = selectedIngredients.size > 0 || selectedFlavors.size > 0
+        ? filterRecipes() : recipes;
+
+    if (pool.length === 0) {
+        renderResults([], '随机推荐');
+        return;
+    }
+
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    renderResults([pick], '随机推荐', true);
+}
+
+// ==================== 渲染结果 ====================
+function renderResults(results, title, isRandom = false) {
+    const container = document.getElementById('results');
+
+    if (results.length === 0) {
+        container.innerHTML = `
+            <div class="section-card">
+                <div class="empty-state">
+                    <div class="empty-icon">🍽️</div>
+                    <p>没有找到匹配的菜品</p>
+                    <p class="sub">试试减少筛选条件，或点击「随机推荐」</p>
+                </div>
+            </div>`;
+        return;
+    }
+
+    const header = `
+        <div class="results-header">
+            <div class="section-title"><span class="icon">${isRandom ? '🎲' : '📋'}</span> ${title}</div>
+            <div class="results-count">共 ${results.length} 道菜</div>
+        </div>`;
+
+    const cards = results.map((r, i) => {
+        const diffClass = r.difficulty === '简单' ? 'easy' : r.difficulty === '中等' ? 'medium' : 'hard';
+        const ingredientHtml = r.ingredients.map(ing =>
+            selectedIngredients.has(ing) ? `<span class="highlight">${ing}</span>` : ing
+        ).join('、');
+
+        return `
+        <div class="recipe-card ${isRandom ? 'random-pick' : ''}" onclick="showDetail(${recipes.indexOf(r)})" style="animation-delay:${i*0.06}s">
+            ${isRandom ? '<div class="random-badge">🎲 今天就吃这个！</div>' : ''}
+            <div class="recipe-img">
+                ${r.emoji}
+                <span class="difficulty-badge difficulty-${diffClass}">${r.difficulty}</span>
+            </div>
+            <div class="recipe-body">
+                <div class="recipe-name">${r.name}</div>
+                <div class="recipe-meta">
+                    <span>⏱ ${r.time}分钟</span>
+                    <span>📊 ${r.difficulty}</span>
+                </div>
+                <div class="recipe-tags">
+                    ${r.flavors.map(f => `<span class="recipe-tag flavor-tag">${f}</span>`).join('')}
+                </div>
+                <div class="recipe-ingredients">食材：${ingredientHtml}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `<div class="section-card">${header}<div class="recipe-grid">${cards}</div></div>`;
+
+    // 滚动到结果
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ==================== 详情弹窗 ====================
+function showDetail(index) {
+    const r = recipes[index];
+    const d = r.detail;
+    const diffClass = r.difficulty === '简单' ? 'easy' : r.difficulty === '中等' ? 'medium' : 'hard';
+
+    document.getElementById('modalContent').innerHTML = `
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h2>${r.emoji} ${r.name}</h2>
+        <div class="recipe-meta">
+            <span>⏱ ${r.time}分钟</span>
+            <span class="difficulty-${diffClass}">📊 ${r.difficulty}</span>
+        </div>
+        <div class="recipe-tags">
+            ${r.flavors.map(f => `<span class="recipe-tag flavor-tag">${f}</span>`).join('')}
+        </div>
+        <p style="color:var(--text-light);margin-bottom:20px;">${d.desc}</p>
+
+        <div class="modal-section">
+            <h3>🧾 食材清单</h3>
+            <ul>${d.ingredientList.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>
+
+        <div class="modal-section">
+            <h3>👨‍🍳 做法步骤</h3>
+            ${d.steps.map((s, i) => `
+                <div class="step">
+                    <span class="step-num">${i + 1}</span>
+                    <span class="step-text">${s}</span>
+                </div>
+            `).join('')}
+        </div>
+
+        <div class="modal-section">
+            <h3>💡 小贴士</h3>
+            <div class="tip-box">${d.tip}</div>
+        </div>
+    `;
+
+    document.getElementById('modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+init();
+</script>
+
+</body>
+</html>
